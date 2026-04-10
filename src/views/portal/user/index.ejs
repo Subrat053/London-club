@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= appName || 'London Club' %> | User Portal</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --primary: #0f766e;
+      --primary-2: #0ea5e9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top left, #dbeafe 0%, var(--bg) 35%), var(--bg);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 16px 36px;
+    }
+
+    .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .meta {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 8px 24px rgba(2, 6, 23, 0.05);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .card p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      min-height: 34px;
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      padding: 9px 12px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 13px;
+      background: #fff;
+    }
+
+    .btn.primary {
+      background: linear-gradient(120deg, var(--primary), var(--primary-2));
+      border-color: transparent;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <h1 class="title">User Portal</h1>
+        <p class="meta">Types defined: <%= userTypes.join(', ') %>. Current type: <%= currentType %>.</p>
+      </div>
+      <div class="badge"><%= appName || 'London Club' %></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Home</h3>
+        <p>Main dashboard and active promotions.</p>
+        <a class="btn primary" href="/home">Open Home</a>
+      </div>
+      <div class="card">
+        <h3>Wallet</h3>
+        <p>Recharge, withdrawal and transactions.</p>
+        <a class="btn" href="/wallet">Open Wallet</a>
+      </div>
+      <div class="card">
+        <h3>Activity</h3>
+        <p>Check-in, rebate, jackpot and vip progression.</p>
+        <a class="btn" href="/activity">Open Activity</a>
+      </div>
+      <div class="card">
+        <h3>Account</h3>
+        <p>Profile settings and security center.</p>
+        <a class="btn" href="/mian">Open Account</a>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

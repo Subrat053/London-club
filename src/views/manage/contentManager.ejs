@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Home Content Manager</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="/css/admin.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        .manager-card {
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            background: #1f1f24;
+            margin-bottom: 16px;
+        }
+
+        .manager-card .card-header {
+            border-bottom: 1px solid #343a40;
+            background: linear-gradient(120deg, #1f2937, #111827);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .carousel-row {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .preview-wrap {
+            background: #0b1220;
+            border: 1px solid #263041;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .preview-carousel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .preview-carousel img {
+            width: 100%;
+            height: 92px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #344054;
+            background: #0f172a;
+        }
+
+        .popup-preview {
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 12px;
+            background: #0f172a;
+        }
+
+        .popup-preview img {
+            width: 100%;
+            max-height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            margin-top: 8px;
+        }
+
+        .muted-note {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <%- include('nav') %>
+        <div class="content-wrapper">
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-8">
+                            <h1>Home Banner And Popup Manager</h1>
+                            <div class="muted-note">Control carousel banners and popup content shown on Home page.</div>
+                        </div>
+                        <div class="col-sm-4 text-right">
+                            <button id="reloadBtn" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-sync"></i> Reload
+                            </button>
+                            <button id="saveBtn" class="btn btn-success btn-sm">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="content">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card manager-card">
+                                <div class="card-header">
+                                    <h3 class="card-title mb-0"><i class="fas fa-signature mr-1"></i> Site Name (Admin Managed)</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group mb-0">
+                                        <label>Application Name Shown Across The Site</label>
+                                        <input id="siteNameInput" type="text" class="form-control" maxlength="120" placeholder="London Club">
+                                        <div class="muted-note mt-2">This value controls the site/app name seen by users.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card manager-card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title mb-0"><i class="fas fa-images mr-1"></i> Carousel Banners</h3>
+                                    <button id="addCarouselBtn" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus"></i> Add Banner
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div id="carouselRows"></div>
+                                    <div class="muted-note">Use full URL or site-relative image path. Ex: /img/banner/banner-1.png</div>
+                                </div>
+                            </div>
+
+                            <div class="card manager-card">
+                                <div class="card-header">
+                                    <h3 class="card-title mb-0"><i class="fas fa-window-restore mr-1"></i> Popup Banner</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label>Popup Title</label>
+                                            <input id="popupTitle" type="text" class="form-control" maxlength="200">
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <label>Popup Button Text</label>
+                                            <input id="popupButtonText" type="text" class="form-control" maxlength="100">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Popup Message</label>
+                                        <textarea id="popupMessage" class="form-control" rows="4" maxlength="4000"></textarea>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <label>Popup Image URL</label>
+                                            <input id="popupImage" type="text" class="form-control" maxlength="500">
+                                        </div>
+                                        <div class="form-group col-md-4">
+                                            <label>Popup Button Link</label>
+                                            <input id="popupLink" type="text" class="form-control" maxlength="500">
+                                        </div>
+                                        <div class="form-group col-md-2 d-flex align-items-end">
+                                            <div class="form-check mb-2">
+                                                <input id="popupEnabled" class="form-check-input" type="checkbox">
+                                                <label class="form-check-label" for="popupEnabled">Enable</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <div class="card manager-card">
+                                <div class="card-header">
+                                    <h3 class="card-title mb-0"><i class="fas fa-eye mr-1"></i> Live Preview</h3>
+                                </div>
+                                <div class="card-body preview-wrap">
+                                    <h6>Carousel Preview</h6>
+                                    <div id="carouselPreview" class="preview-carousel"></div>
+                                    <h6 class="mt-2">Popup Preview</h6>
+                                    <div class="popup-preview">
+                                        <h5 id="popupTitlePreview" class="mb-2"></h5>
+                                        <p id="popupMessagePreview" class="mb-1" style="white-space: pre-line;"></p>
+                                        <a id="popupLinkPreview" href="#" target="_blank" rel="noopener noreferrer"></a>
+                                        <img id="popupImagePreview" src="" alt="Popup Preview">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="/plugins/jquery/jquery.min.js"></script>
+    <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/dist/js/adminlte.min.js"></script>
+    <script src="/js/admin/admin.js"></script>
+    <script>
+        // Defensive fallback in case admin.js is cached/missed and preloader remains visible.
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                preloader.style.display = 'none';
+            }
+        });
+
+        axios.defaults.withCredentials = true;
+
+        const CONTENT_GET_ENDPOINTS = ['/api/admin/content/home', '/api/webapi/admin/content/home'];
+        const CONTENT_SAVE_ENDPOINTS = ['/api/admin/content/home', '/api/webapi/admin/content/home'];
+
+        const state = {
+            application_name: 'London Club',
+            carousel: [],
+            popup: {
+                title: '',
+                message: '',
+                image_url: '',
+                button_text: '',
+                button_link: '',
+                is_enabled: 1,
+            }
+        };
+
+        const defaults = {
+            carousel: [
+                { image_url: '/img/banner/banner-1.png', link_url: '', sort_order: 1, is_active: 1 },
+                { image_url: '/img/banner/banner-2.png', link_url: '', sort_order: 2, is_active: 1 }
+            ]
+        };
+
+        const carouselRows = document.getElementById('carouselRows');
+        const siteNameInput = document.getElementById('siteNameInput');
+
+        async function requestContentApi(method, endpoints, payload = null) {
+            let lastError = new Error('Request failed');
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = method === 'get'
+                        ? await axios.get(endpoint, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        : await axios.post(endpoint, payload, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+
+                    if (response?.data?.status === true) {
+                        return response;
+                    }
+
+                    if (typeof response?.data === 'string' && response.data.toLowerCase().includes('<!doctype html')) {
+                        lastError = new Error('Session expired or access denied. Please login as admin again.');
+                        continue;
+                    }
+
+                    if (response?.data?.message) {
+                        lastError = new Error(response.data.message);
+                    } else {
+                        lastError = new Error(`Unexpected response from ${endpoint}`);
+                    }
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+
+            throw lastError;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function renderCarouselRows() {
+            if (!state.carousel.length) {
+                state.carousel = defaults.carousel.map((item) => ({ ...item }));
+            }
+            const rows = state.carousel;
+            carouselRows.innerHTML = rows.map((item, index) => `
+                <div class="carousel-row" data-index="${index}">
+                    <div class="form-row">
+                        <div class="form-group col-md-5">
+                            <label>Image URL</label>
+                            <input type="text" class="form-control banner-image" value="${escapeHtml(item.image_url)}" maxlength="500">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Link URL (optional)</label>
+                            <input type="text" class="form-control banner-link" value="${escapeHtml(item.link_url)}" maxlength="500">
+                        </div>
+                        <div class="form-group col-md-1">
+                            <label>Order</label>
+                            <input type="number" class="form-control banner-order" value="${Number(item.sort_order || (index + 1))}">
+                        </div>
+                        <div class="form-group col-md-1 d-flex align-items-end">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input banner-active" ${Number(item.is_active) === 1 ? 'checked' : ''}>
+                                <label class="form-check-label">On</label>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btn-sm remove-row w-100">X</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            bindRowEvents();
+            renderPreview();
+        }
+
+        function bindRowEvents() {
+            document.querySelectorAll('.carousel-row').forEach((row) => {
+                const idx = Number(row.getAttribute('data-index'));
+                row.querySelector('.banner-image').addEventListener('input', (event) => {
+                    state.carousel[idx].image_url = event.target.value;
+                    renderPreview();
+                });
+                row.querySelector('.banner-link').addEventListener('input', (event) => {
+                    state.carousel[idx].link_url = event.target.value;
+                    renderPreview();
+                });
+                row.querySelector('.banner-order').addEventListener('input', (event) => {
+                    state.carousel[idx].sort_order = Number(event.target.value || idx + 1);
+                    renderPreview();
+                });
+                row.querySelector('.banner-active').addEventListener('change', (event) => {
+                    state.carousel[idx].is_active = event.target.checked ? 1 : 0;
+                    renderPreview();
+                });
+                row.querySelector('.remove-row').addEventListener('click', () => {
+                    state.carousel.splice(idx, 1);
+                    renderCarouselRows();
+                });
+            });
+        }
+
+        function bindPopupEvents() {
+            const fields = [
+                ['popupTitle', 'title'],
+                ['popupMessage', 'message'],
+                ['popupImage', 'image_url'],
+                ['popupButtonText', 'button_text'],
+                ['popupLink', 'button_link'],
+            ];
+
+            fields.forEach(([id, key]) => {
+                document.getElementById(id).addEventListener('input', (event) => {
+                    state.popup[key] = event.target.value;
+                    renderPreview();
+                });
+            });
+
+            document.getElementById('popupEnabled').addEventListener('change', (event) => {
+                state.popup.is_enabled = event.target.checked ? 1 : 0;
+                renderPreview();
+            });
+        }
+
+        function bindSiteNameEvents() {
+            siteNameInput.addEventListener('input', (event) => {
+                state.application_name = String(event.target.value || '').trim() || 'London Club';
+            });
+        }
+
+        function setPopupFields() {
+            document.getElementById('popupTitle').value = state.popup.title || '';
+            document.getElementById('popupMessage').value = state.popup.message || '';
+            document.getElementById('popupImage').value = state.popup.image_url || '';
+            document.getElementById('popupButtonText').value = state.popup.button_text || '';
+            document.getElementById('popupLink').value = state.popup.button_link || '';
+            document.getElementById('popupEnabled').checked = Number(state.popup.is_enabled) === 1;
+            siteNameInput.value = state.application_name || 'London Club';
+        }
+
+        function renderPreview() {
+            const activeBanners = state.carousel
+                .filter((item) => Number(item.is_active) === 1 && String(item.image_url || '').trim())
+                .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+
+            const carouselPreview = document.getElementById('carouselPreview');
+            if (!activeBanners.length) {
+                carouselPreview.innerHTML = '<div class="text-muted">No active carousel banners.</div>';
+            } else {
+                carouselPreview.innerHTML = activeBanners.map((item) => `<img src="${escapeHtml(item.image_url)}" alt="Banner">`).join('');
+            }
+
+            document.getElementById('popupTitlePreview').textContent = state.popup.title || 'Popup title';
+            document.getElementById('popupMessagePreview').textContent = state.popup.message || 'Popup message preview';
+            const linkPreview = document.getElementById('popupLinkPreview');
+            linkPreview.textContent = state.popup.button_text || '';
+            linkPreview.href = state.popup.button_link || '#';
+            linkPreview.style.display = state.popup.button_text ? 'inline-block' : 'none';
+
+            const imagePreview = document.getElementById('popupImagePreview');
+            imagePreview.src = state.popup.image_url || '/img/banner/banner-2.png';
+            imagePreview.style.opacity = Number(state.popup.is_enabled) === 1 ? '1' : '0.35';
+        }
+
+        async function loadContentSettings() {
+            const response = await requestContentApi('get', CONTENT_GET_ENDPOINTS);
+            if (!response?.data?.status) {
+                throw new Error(response?.data?.message || 'Failed to load content settings');
+            }
+
+            const data = response.data.data || {};
+            state.carousel = Array.isArray(data.carousel) ? data.carousel : [];
+            state.popup = data.popup || state.popup;
+            state.application_name = String(data.application_name || state.application_name || 'London Club');
+
+            renderCarouselRows();
+            setPopupFields();
+            renderPreview();
+        }
+
+        async function saveContentSettings() {
+            const sanitizedCarousel = state.carousel
+                .map((item, idx) => ({
+                    image_url: String(item.image_url || '').trim(),
+                    link_url: String(item.link_url || '').trim(),
+                    sort_order: Number(item.sort_order || idx + 1),
+                    is_active: Number(item.is_active) === 1 ? 1 : 0,
+                }))
+                .filter((item) => item.image_url);
+
+            if (!sanitizedCarousel.length) {
+                alert('Please add at least one carousel banner image URL.');
+                return;
+            }
+
+            const payload = {
+                carousel: sanitizedCarousel,
+                popup: {
+                    title: String(state.popup.title || '').trim(),
+                    message: String(state.popup.message || '').trim(),
+                    image_url: String(state.popup.image_url || '').trim(),
+                    button_text: String(state.popup.button_text || '').trim(),
+                    button_link: String(state.popup.button_link || '').trim(),
+                    is_enabled: Number(state.popup.is_enabled) === 1 ? 1 : 0,
+                },
+                application_name: String(siteNameInput.value || '').trim() || 'London Club'
+            };
+
+            const response = await requestContentApi('post', CONTENT_SAVE_ENDPOINTS, payload);
+            if (!response?.data?.status) {
+                throw new Error(response?.data?.message || 'Save failed');
+            }
+            alert('Home content settings saved successfully.');
+            await loadContentSettings();
+        }
+
+        document.getElementById('addCarouselBtn').addEventListener('click', () => {
+            state.carousel.push({ image_url: '', link_url: '', sort_order: state.carousel.length + 1, is_active: 1 });
+            renderCarouselRows();
+        });
+
+        document.getElementById('reloadBtn').addEventListener('click', async () => {
+            try {
+                await loadContentSettings();
+            } catch (error) {
+                alert(error.message || 'Failed to reload');
+            }
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', async () => {
+            try {
+                await saveContentSettings();
+            } catch (error) {
+                alert(error.message || 'Failed to save settings');
+            }
+        });
+
+        bindPopupEvents();
+        bindSiteNameEvents();
+        loadContentSettings().catch((error) => {
+            console.error(error);
+            alert(error.message || 'Failed to load content settings');
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Portal</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #0f766e;
+      --accent-soft: #d1fae5;
+      --border: #e5e7eb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top right, #dbf4ff 0%, var(--bg) 42%), var(--bg);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: #cbd5e1;
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      filter: brightness(1.03);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 6px 18px rgba(2, 8, 23, 0.04);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .card p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      min-height: 36px;
+    }
+
+    .quick {
+      margin-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      background: var(--accent-soft);
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .pill-btn {
+      border: 1px solid #a7f3d0;
+      background: var(--accent-soft);
+    }
+
+    .api-result {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #334155;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    @media (max-width: 640px) {
+      .title {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 class="title">Admin Portal</h1>
+        <p class="subtitle">Quick access to manager controls and platform operations.</p>
+      </div>
+      <a class="btn" href="/home">Go Home</a>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Dashboard</h3>
+        <p>Platform overview, totals and operational status.</p>
+        <a class="btn primary" href="/admin/manager/index">Open Dashboard</a>
+      </div>
+      <div class="card">
+        <h3>Users</h3>
+        <p>Inspect users, balances and account controls.</p>
+        <a class="btn" href="/admin/manager/members">Manage Users</a>
+      </div>
+      <div class="card">
+        <h3>Recharge Queue</h3>
+        <p>Review and approve pending recharge requests.</p>
+        <a class="btn" href="/admin/manager/recharge">Open Recharge</a>
+      </div>
+      <div class="card">
+        <h3>Withdraw Queue</h3>
+        <p>Process pending withdrawal requests securely.</p>
+        <a class="btn" href="/admin/manager/withdraw">Open Withdraw</a>
+      </div>
+      <div class="card">
+        <h3>Settings</h3>
+        <p>Adjust app settings, level and payment rules.</p>
+        <a class="btn" href="/admin/manager/settings">Open Settings</a>
+      </div>
+      <div class="card">
+        <h3>Statistical Reports</h3>
+        <p>Daily and period reports for operations.</p>
+        <a class="btn" href="/admin/manager/statistical">View Reports</a>
+      </div>
+      <div class="card">
+        <h3>Home Banner Manager</h3>
+        <p>Update home carousel images and popup banner content.</p>
+        <a class="btn" href="/admin/manager/content">Open Content Manager</a>
+      </div>
+    </div>
+
+    <div class="quick">
+      <span style="font-weight:700;">Quick APIs:</span>
+      <button class="pill pill-btn" data-endpoint="/api/webapi/GetDataAdmin" type="button">GetDataAdmin</button>
+      <button class="pill pill-btn" data-endpoint="/api/webapi/GetRecharge" type="button">GetRecharge</button>
+      <button class="pill pill-btn" data-endpoint="/api/webapi/GetWithdraw" type="button">GetWithdraw</button>
+      <div id="apiResult" class="api-result">Click any API button to run it with your current session.</div>
+    </div>
+  </div>
+
+  <script>
+    const resultBox = document.getElementById('apiResult');
+    const buttons = document.querySelectorAll('.pill-btn');
+
+    const renderResult = (title, payload, ok) => {
+      const prefix = ok ? '[OK] ' : '[ERROR] ';
+      const text = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+      resultBox.textContent = prefix + title + '\n' + text.slice(0, 1200);
+    };
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', async () => {
+        const endpoint = button.getAttribute('data-endpoint');
+        resultBox.textContent = 'Loading ' + endpoint + ' ...';
+        try {
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json, text/plain, */*'
+            }
+          });
+
+          const contentType = response.headers.get('content-type') || '';
+          const data = contentType.includes('application/json') ? await response.json() : await response.text();
+          renderResult(endpoint + ' (' + response.status + ')', data, response.ok);
+        } catch (error) {
+          renderResult(endpoint, error.message || 'Request failed', false);
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

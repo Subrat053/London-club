@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Recharge Bonus</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link rel="stylesheet" href="/dist/css/adminlte.min.css">
+    <link href="//cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+
+<body class="dark-mode sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+    <div class="wrapper">
+        <%- include('nav') %>
+
+            <!-- Content Wrapper. Contains page content -->
+            <div class="content-wrapper">
+                <!-- Content Header (Page header) -->
+                <section class="content-header">
+                    <div class="container-fluid">
+                        <div class="row mb-2">
+                            <div class="col-sm-6">
+                                <h1>Recharge Bonus</h1>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.container-fluid -->
+                </section>
+
+                <!-- Main content -->
+                <section class="content">
+                    <div class="container-fluid">
+                 
+
+                        <div class="row info-box">
+                            <div class="form-group" style="width: 100%;">
+                                <div class="text-center">
+                                    <label for="telegram">Set a Recharge Bonus</label>
+                                </div>
+                                <label for="username" style="color: #3498db;">Bonus in Percentage</label>
+                                <input type="text" class="form-control" id="username" placeholder="Please enter a number" oninput="value=value.replace(/\D/g,'')" value=""><br>
+                                <button type="submit" class="btn btn-danger create_ctv" style="width: 100%;">Update</button>
+                            </div>
+                        </div>
+
+                       
+
+                    </div>
+                    <!-- /.container-fluid -->
+                </section>
+                <!-- /.content -->
+                
+
+                <!-- <a id="back-to-top" href="#" class="btn btn-primary back-to-top" role="button" aria-label="Scroll to top">
+                    <i class="fas fa-chevron-up"></i>
+                </a> -->
+            </div>
+    </div>
+    <script src="/plugins/jquery/jquery.min.js"></script>
+    <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/dist/js/adminlte.min.js"></script>
+    <script src="/js/admin/admin.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <script>
+        $.ajax({
+            type: "GET",
+            url: "/api/webapi/recharge-bonus",
+            dataType: "json",
+            success: function (response) {
+                if(response.status){
+                    const { recharge_bonus } = response.data;
+                    $('#username').val(recharge_bonus);
+                }
+                else{
+                    Swal.fire({
+                                icon: 'error',
+                                title: `${response.message}`,
+                    })
+                }
+            }
+        });
+
+        $('.create_ctv').click(function (e) { 
+            e.preventDefault();
+            let username = $('#username').val().trim(); 
+            if (username) {
+                $.ajax({
+                    type: "GET",
+                    url: `/api/webapi/recharge-bonus/${username}`,
+                    dataType: "json",
+                    success: function (response) {
+                        if (response.status == true) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: `${response.message}`,
+                            })
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: `${response.message}`,
+                            })
+                        }
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Please enter a number',
+                })
+            }
+        });
+    </script>
+</body>
+
+</html>

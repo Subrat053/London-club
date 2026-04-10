@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= appName || 'London Club' %> | Admin Portal</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #0f172a; color: #e5e7eb; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
+    h1 { margin: 0 0 8px; }
+    .meta { margin: 0 0 15px; color: #94a3b8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .card { background: #111827; border: 1px solid #334155; border-radius: 12px; padding: 14px; }
+    .card h3 { margin: 0 0 8px; }
+    .card p { margin: 0 0 10px; color: #94a3b8; font-size: 13px; }
+    .btn { display: inline-block; text-decoration: none; font-size: 13px; border: 1px solid #475569; color: #e2e8f0; border-radius: 8px; padding: 8px 11px; font-weight: 700; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>Admin Portal</h1>
+    <p class="meta">Types defined: <%= userTypes.join(', ') %>. Current type: <%= currentType %>.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Admin Dashboard</h3>
+        <p>Primary admin controls and operations.</p>
+        <a class="btn" href="/admin">Open Dashboard</a>
+      </div>
+      <div class="card">
+        <h3>Home Content Manager</h3>
+        <p>Manage carousel banners and popup content.</p>
+        <a class="btn" href="/admin/manager/content">Open Content</a>
+      </div>
+      <div class="card">
+        <h3>Admin Settings</h3>
+        <p>Application settings and system links.</p>
+        <a class="btn" href="/admin/manager/settings">Open Settings</a>
+      </div>
+      <div class="card">
+        <h3>Manager Portal</h3>
+        <p>Open manager workflow portal.</p>
+        <a class="btn" href="/portal/manager">Open Manager Portal</a>
+      </div>
+      <div class="card">
+        <h3>User Portal</h3>
+        <p>Open standard user workflow portal.</p>
+        <a class="btn" href="/portal/user">Open User Portal</a>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

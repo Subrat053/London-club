@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manager Portal</title>
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --card: #ffffff;
+      --text: #1a202c;
+      --muted: #5f6b7a;
+      --accent: #b45309;
+      --accent-soft: #ffedd5;
+      --border: #ece7df;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+      color: var(--text);
+      background: linear-gradient(160deg, #fff8ef 0%, var(--bg) 30%, #eef7ff 100%);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 24px 16px 42px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-decoration: none;
+      color: var(--text);
+      background: #fff;
+      font-weight: 700;
+      display: inline-block;
+    }
+
+    .btn.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .card p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      min-height: 36px;
+    }
+
+    .quick {
+      margin-top: 24px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .pill {
+      border-radius: 999px;
+      text-decoration: none;
+      border: 1px solid #fed7aa;
+      background: var(--accent-soft);
+      color: #9a3412;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    .pill-btn {
+      border: 1px solid #fed7aa;
+      background: var(--accent-soft);
+    }
+
+    .api-result {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #334155;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Manager Portal</h1>
+        <p class="subtitle">Daily operations, user oversight and team workflows.</p>
+      </div>
+      <a class="btn" href="/home">Go Home</a>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Overview</h3>
+        <p>Monitor manager KPIs and activity summaries.</p>
+        <a class="btn primary" href="/manager/index">Open Overview</a>
+      </div>
+      <div class="card">
+        <h3>User List</h3>
+        <p>Search and manage assigned users and balances.</p>
+        <a class="btn" href="/manager/member">Open Users</a>
+      </div>
+      <div class="card">
+        <h3>Recharge Requests</h3>
+        <p>Validate and process incoming recharge requests.</p>
+        <a class="btn" href="/manager/recharge">Open Recharge</a>
+      </div>
+      <div class="card">
+        <h3>Withdraw Requests</h3>
+        <p>Review payout requests and maintain queue health.</p>
+        <a class="btn" href="/manager/withdraw">Open Withdraw</a>
+      </div>
+      <div class="card">
+        <h3>Banking & Config</h3>
+        <p>Maintain linked banks and manager settings.</p>
+        <a class="btn" href="/manager/settings">Open Settings</a>
+      </div>
+      <div class="card">
+        <h3>Reports</h3>
+        <p>Daily and historical reports for operational audits.</p>
+        <a class="btn" href="/manager/statistical">Open Reports</a>
+      </div>
+    </div>
+
+    <div class="quick">
+      <span style="font-weight:700;">Quick APIs:</span>
+      <button class="pill pill-btn" data-endpoint="/api/webapi/GetDataUser" type="button">GetDataUser</button>
+      <button class="pill pill-btn" data-endpoint="/api/webapi/GetRecharge" type="button">GetRecharge</button>
+      <button class="pill pill-btn" data-endpoint="/api/webapi/GetWithdraw" type="button">GetWithdraw</button>
+      <div id="apiResult" class="api-result">Click any API button to run it with your current session.</div>
+    </div>
+  </div>
+
+  <script>
+    const resultBox = document.getElementById('apiResult');
+    const buttons = document.querySelectorAll('.pill-btn');
+
+    const renderResult = (title, payload, ok) => {
+      const prefix = ok ? '[OK] ' : '[ERROR] ';
+      const text = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+      resultBox.textContent = prefix + title + '\n' + text.slice(0, 1200);
+    };
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', async () => {
+        const endpoint = button.getAttribute('data-endpoint');
+        resultBox.textContent = 'Loading ' + endpoint + ' ...';
+        try {
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json, text/plain, */*'
+            }
+          });
+
+          const contentType = response.headers.get('content-type') || '';
+          const data = contentType.includes('application/json') ? await response.json() : await response.text();
+          renderResult(endpoint + ' (' + response.status + ')', data, response.ok);
+        } catch (error) {
+          renderResult(endpoint, error.message || 'Request failed', false);
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

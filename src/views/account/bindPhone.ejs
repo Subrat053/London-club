@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Profile</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(180deg, #1f2556 0%, #18204a 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .bind-card {
+            width: 100%;
+            max-width: 420px;
+            background: #252d66;
+            border-radius: 14px;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .bind-title {
+            margin: 0 0 10px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .bind-subtitle {
+            margin: 0 0 20px;
+            font-size: 14px;
+            color: #ced4ff;
+            line-height: 1.45;
+        }
+
+        .field {
+            margin-bottom: 14px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #d8ddff;
+        }
+
+        .field input {
+            width: 100%;
+            height: 46px;
+            border: none;
+            border-radius: 10px;
+            padding: 0 14px;
+            box-sizing: border-box;
+            background: #333d85;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .otp-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+        }
+
+        .btn {
+            height: 46px;
+            border: none;
+            border-radius: 10px;
+            padding: 0 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-send {
+            background: #3b8cf5;
+            color: #fff;
+            min-width: 120px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            margin-top: 8px;
+            background: linear-gradient(180deg, #59b0ea 0%, #2467b3 100%);
+            color: #fff;
+        }
+
+        .bind-note {
+            margin-top: 12px;
+            font-size: 12px;
+            color: #b4bdf7;
+            line-height: 1.4;
+        }
+
+        .alert-toast {
+            margin-bottom: 10px;
+            color: #ffb7b7;
+            min-height: 18px;
+            font-size: 13px;
+        }
+
+        .bind-link {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .bind-link a {
+            color: #7fc6ff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="bind-card">
+        <h1 class="bind-title">Complete your profile</h1>
+        <p class="bind-subtitle">Please verify your phone number to unlock wallet, withdraw, bank linking, and transfer features.</p>
+
+        <div class="alert-toast"></div>
+
+        <div class="field">
+            <label for="phone">Phone number</label>
+            <input id="phone" type="text" maxlength="10" placeholder="Enter your phone number" oninput="this.value=this.value.replace(/\D/g,'')">
+        </div>
+
+        <div class="field otp-row">
+            <div>
+                <label for="otp">OTP</label>
+                <input id="otp" type="text" maxlength="6" placeholder="Enter OTP" oninput="this.value=this.value.replace(/\D/g,'')">
+            </div>
+            <button id="sendOtpBtn" class="btn btn-send" type="button">Send OTP</button>
+        </div>
+
+        <button id="completeBtn" class="btn btn-submit" type="button">Verify and Continue</button>
+
+        <div class="bind-note">You can browse the app without binding phone, but critical financial actions stay restricted until verification is complete.</div>
+
+        <div class="bind-link">
+            <a href="/home">Skip for now and go home</a>
+        </div>
+    </div>
+
+    <script>
+        function alertMess(text) {
+            $('.alert-toast').text(text || '');
+            if (text) {
+                setTimeout(function() {
+                    $('.alert-toast').text('');
+                }, 2500);
+            }
+        }
+
+        $('#sendOtpBtn').on('click', function () {
+            const phone = $('#phone').val().trim();
+            if (!phone) {
+                alertMess('Please enter phone number');
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '/api/webapi/auth/complete-profile/send-otp',
+                data: { phone },
+                dataType: 'json',
+                success: function (response) {
+                    if (response.status) {
+                        alertMess(response.message || 'OTP sent');
+                    } else {
+                        alertMess(response.message || 'Unable to send OTP');
+                    }
+                },
+                error: function () {
+                    alertMess('Unable to send OTP right now.');
+                }
+            });
+        });
+
+        $('#completeBtn').on('click', function () {
+            const phone = $('#phone').val().trim();
+            const otp = $('#otp').val().trim();
+
+            if (!phone || !otp) {
+                alertMess('Phone and OTP are required');
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '/api/webapi/auth/complete-profile',
+                data: { phone, otp },
+                dataType: 'json',
+                success: function (response) {
+                    if (response.status) {
+                        window.location.href = response.redirect || '/home';
+                    } else {
+                        alertMess(response.message || 'Verification failed');
+                    }
+                },
+                error: function () {
+                    alertMess('Verification failed.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
