@@ -128,6 +128,119 @@ const ensureAdminColumns = async (connection) => {
     await ensureColumnExists(connection, 'is_manager', "is_manager ENUM('0','1') NOT NULL DEFAULT '0'");
 };
 
+const getUsersTableColumns = async (connection) => {
+    const [rows] = await connection.query(
+        `SELECT COLUMN_NAME
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'users'`
+    );
+    return new Set(rows.map((row) => String(row.COLUMN_NAME || '').trim()));
+};
+
+const buildColumnAssignments = (availableColumns, values = {}, rawValues = {}) => {
+    const assignments = [];
+    const params = [];
+
+    Object.keys(values).forEach((column) => {
+        if (!availableColumns.has(column)) {
+            return;
+        }
+        assignments.push(`\`${column}\` = ?`);
+        params.push(values[column]);
+    });
+
+    Object.keys(rawValues).forEach((column) => {
+        if (!availableColumns.has(column)) {
+            return;
+        }
+        assignments.push(`\`${column}\` = ${rawValues[column]}`);
+    });
+
+    return { assignments, params };
+};
+
+const updateAdminUser = async (connection, availableColumns, userId, payload) => {
+    const values = {
+        email: payload.email,
+        phone: payload.phone,
+        name_user: payload.displayName,
+        full_name: payload.displayName,
+        password: payload.passwordHash,
+        plain_password: payload.password,
+        veri: 1,
+        status: 1,
+        level: 1,
+        is_admin: '1',
+        is_manager: '0',
+        last_login: payload.now,
+    };
+
+    const rawValues = {
+        auth_provider: "'password'",
+        email_verified: "'1'",
+    };
+
+    const { assignments, params } = buildColumnAssignments(availableColumns, values, rawValues);
+    if (!assignments.length) {
+        return;
+    }
+
+    params.push(userId);
+    await connection.query(`UPDATE users SET ${assignments.join(', ')} WHERE \`id\` = ?`, params);
+};
+
+const insertAdminUser = async (connection, availableColumns, payload) => {
+    const values = {
+        id_user: payload.idUser,
+        phone: payload.phone,
+        google_id: null,
+        email: payload.email,
+        token: '',
+        name_user: payload.displayName,
+        full_name: payload.displayName,
+        avatar_url: null,
+        password: payload.passwordHash,
+        plain_password: payload.password,
+        money: 0,
+        total_money: 0,
+        vip_level: 0,
+        roses_f1: 0,
+        roses_f: 0,
+        roses_today: 0,
+        level: 1,
+        is_admin: '1',
+        is_manager: '0',
+        rank: 1,
+        code: payload.code,
+        invite: '0',
+        ctv: '0',
+        veri: 1,
+        otp: '000000',
+        ip_address: '127.0.0.1',
+        status: 1,
+        time: payload.nowString,
+        time_otp: payload.nowString,
+        user_level: 0,
+        last_login: payload.now,
+    };
+
+    const rawValues = {
+        auth_provider: "'password'",
+        email_verified: "'1'",
+        phone_verified: "'1'",
+        is_profile_completed: "'1'",
+        today: 'NOW()',
+    };
+
+    const { assignments, params } = buildColumnAssignments(availableColumns, values, rawValues);
+    if (!assignments.length) {
+        throw new Error('No compatible columns found to insert admin user');
+    }
+
+    await connection.query(`INSERT INTO \`users\` SET ${assignments.join(', ')}`, params);
+};
+
 const main = async () => {
     const args = parseArgs(process.argv.slice(2));
 
@@ -152,38 +265,20 @@ const main = async () => {
         const nowString = String(now);
         const displayName = fullName || email.split('@')[0] || `Admin${randomNumber(1000, 9999)}`;
         const safePhone = await generateUniquePhone(connection, requestedPhone);
+        const usersColumns = await getUsersTableColumns(connection);
 
         const existingUser = await safeFindUserByIdentifier(connection, email, safePhone);
+        const passwordHash = md5(password);
 
         if (existingUser) {
-            await connection.query(
-                `UPDATE users
-                 SET email = ?,
-                     phone = COALESCE(NULLIF(phone, ''), ?),
-                     name_user = ?,
-                     full_name = ?,
-                     password = ?,
-                     plain_password = ?,
-                     auth_provider = 'password',
-                     email_verified = '1',
-                     veri = 1,
-                     status = 1,
-                     level = 1,
-                     is_admin = '1',
-                     is_manager = '0',
-                     last_login = ?
-                 WHERE id = ?`,
-                [
-                    email,
-                    safePhone,
-                    displayName,
-                    displayName,
-                    md5(password),
-                    password,
-                    now,
-                    existingUser.id,
-                ]
-            );
+            await updateAdminUser(connection, usersColumns, existingUser.id, {
+                email,
+                phone: existingUser.phone || safePhone,
+                displayName,
+                password,
+                passwordHash,
+                now,
+            });
 
             console.log('Admin user updated successfully.');
             console.log(`Email: ${email}`);
@@ -194,59 +289,17 @@ const main = async () => {
         const code = await generateUniqueCode(connection);
         const idUser = randomNumber(10000, 99999);
 
-        await connection.query(
-            `INSERT INTO users (
-                id_user,
-                phone,
-                google_id,
-                email,
-                auth_provider,
-                email_verified,
-                phone_verified,
-                is_profile_completed,
-                token,
-                name_user,
-                full_name,
-                avatar_url,
-                password,
-                plain_password,
-                money,
-                total_money,
-                vip_level,
-                roses_f1,
-                roses_f,
-                roses_today,
-                level,
-                is_admin,
-                is_manager,
-                rank,
-                code,
-                invite,
-                ctv,
-                veri,
-                otp,
-                ip_address,
-                status,
-                today,
-                time,
-                time_otp,
-                user_level,
-                last_login
-            ) VALUES (?, ?, NULL, ?, 'password', '1', '1', '1', '', ?, ?, NULL, ?, ?, 0, 0, 0, 0, 0, 0, 1, '1', '0', 1, ?, '0', '0', 1, '000000', '127.0.0.1', 1, NOW(), ?, ?, 0, ?)`,
-            [
-                idUser,
-                safePhone,
-                email,
-                displayName,
-                displayName,
-                md5(password),
-                password,
-                code,
-                nowString,
-                nowString,
-                now,
-            ]
-        );
+        await insertAdminUser(connection, usersColumns, {
+            idUser,
+            phone: safePhone,
+            email,
+            displayName,
+            password,
+            passwordHash,
+            code,
+            now,
+            nowString,
+        });
 
         console.log('Admin user created successfully.');
         console.log(`Email: ${email}`);
