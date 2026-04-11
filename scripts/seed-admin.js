@@ -105,9 +105,27 @@ const generateUniquePhone = async (connection, preferredPhone) => {
     return `9${Date.now().toString().slice(-8)}${randomNumber(10, 99)}`;
 };
 
+const ensureColumnExists = async (connection, columnName, definitionSql) => {
+    const [rows] = await connection.query(
+        `SELECT COUNT(*) AS total
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'users'
+           AND COLUMN_NAME = ?`,
+        [columnName]
+    );
+
+    const exists = Number(rows?.[0]?.total || 0) > 0;
+    if (exists) {
+        return;
+    }
+
+    await connection.query(`ALTER TABLE users ADD COLUMN ${definitionSql}`);
+};
+
 const ensureAdminColumns = async (connection) => {
-    await connection.query("ALTER TABLE users ADD COLUMN is_admin ENUM('0','1') NOT NULL DEFAULT '0'");
-    await connection.query("ALTER TABLE users ADD COLUMN is_manager ENUM('0','1') NOT NULL DEFAULT '0'");
+    await ensureColumnExists(connection, 'is_admin', "is_admin ENUM('0','1') NOT NULL DEFAULT '0'");
+    await ensureColumnExists(connection, 'is_manager', "is_manager ENUM('0','1') NOT NULL DEFAULT '0'");
 };
 
 const main = async () => {
