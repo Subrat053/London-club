@@ -100,7 +100,15 @@ const cronJobGame1p = (io) => {
     });
 
     cron.schedule('0 1 * * *', async() => {
-         await connection.execute('UPDATE users SET roses_yesterday = roses_today, roses_today = 0');
+        try {
+            await connection.execute('UPDATE users SET roses_yesterday = roses_today, roses_today = 0');
+        } catch (error) {
+            if (error?.code === 'ER_BAD_FIELD_ERROR' && String(error?.sqlMessage || '').includes('roses_yesterday')) {
+                await connection.execute('UPDATE users SET roses_today = 0');
+            } else {
+                throw error;
+            }
+        }
         // await connection.execute('UPDATE users SET roses_today = ?', [0]);
         await connection.execute('UPDATE point_list SET money = ?', [0]);
         await connection.execute('UPDATE turn_over SET daily_turn_over = ?', [0]);

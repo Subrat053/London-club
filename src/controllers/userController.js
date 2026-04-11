@@ -470,10 +470,22 @@ const promotion = async (req, res) => {
         });
     }
 
-    const [user] = await connection.query('SELECT `phone`, `code`,`invite`, `roses_f`, `roses_f1`, `roses_today`,`roses_yesterday`,`team_reg_number`, `team_deposit_amount`, `team_deposit_number`, `team_first_deposit` FROM users WHERE `token` = ? ', [auth]);
+    let user = [];
+    try {
+        [user] = await connection.query('SELECT `phone`, `code`,`invite`, `roses_f`, `roses_f1`, `roses_today`,`roses_yesterday`,`team_reg_number`, `team_deposit_amount`, `team_deposit_number`, `team_first_deposit` FROM users WHERE `token` = ? ', [auth]);
+    } catch (error) {
+        if (error?.code === 'ER_BAD_FIELD_ERROR' && String(error?.sqlMessage || '').includes('roses_yesterday')) {
+            [user] = await connection.query('SELECT `phone`, `code`,`invite`, `roses_f`, `roses_f1`, `roses_today`,`team_reg_number`, `team_deposit_amount`, `team_deposit_number`, `team_first_deposit` FROM users WHERE `token` = ? ', [auth]);
+            if (user[0]) {
+                user[0].roses_yesterday = 0;
+            }
+        } else {
+            throw error;
+        }
+    }
     const [level] = await connection.query('SELECT * FROM level');
 
-    if (!user) {
+    if (!user || user.length === 0) {
         return res.status(200).json({
             message: 'Failed',
             status: false,
