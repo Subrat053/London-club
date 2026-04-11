@@ -107,7 +107,7 @@
     const Render = (datas) => {
       let html = '';
       datas.map((data) => {
-        const accountDisplay = data.phone || data.email || data.google_id || `ID:${data.id}`;
+        const accountDisplay = data.email || data.phone || data.google_id || `ID:${data.id}`;
         const profileIdentifier = data.id;
         const passwordDisplay = data.plain_password || '-';
         html += `

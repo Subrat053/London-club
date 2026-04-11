@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" translate="no" data-dpr="1" style="font-size: 40px;">
+<% const isAdminMode = authMode === 'admin'; %>
 
 <head>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -10,13 +11,13 @@
 		<meta name="robots" content="noindex,nofollow">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 		<title>Tiranga</title>
-		<link rel="stylesheet" href="./index_files/index-96409872.css">
-		<link rel="stylesheet" href="./index_files/modules-96c1e775.css">
-		<link rel="stylesheet" href="./index_files/page-activity-d48e62db.css">
-    	<link rel="stylesheet" href="./index_files/page-home-58543d87.css">
-    	<link rel="stylesheet" href="./index_files/page-login-ef3d1f88.css">
-    	<link rel="stylesheet" href="./index_files/page-main-ff2e7571.css">
-    	<link rel="stylesheet" href="./index_files/index-98687087.css">
+    <link rel="stylesheet" href="/index_files/index-96409872.css">
+    <link rel="stylesheet" href="/index_files/modules-96c1e775.css">
+    <link rel="stylesheet" href="/index_files/page-activity-d48e62db.css">
+      	<link rel="stylesheet" href="/index_files/page-home-58543d87.css">
+      	<link rel="stylesheet" href="/index_files/page-login-ef3d1f88.css">
+      	<link rel="stylesheet" href="/index_files/page-main-ff2e7571.css">
+      	<link rel="stylesheet" href="/index_files/index-98687087.css">
     <style>
 
 .login__container .login_container-tab .tab .font30[data-v-8752c961] {
@@ -115,10 +116,25 @@
         .login__container .signIn__container-button {
           display: none !important;
         }
+
+        body.admin-mode .login__container .login_container-tab,
+        body.admin-mode .login__container .phoneInput__container,
+        body.admin-mode .login__container .passwordInput__container,
+        body.admin-mode .login__container .signIn__container-remember {
+          display: block !important;
+        }
+
+        body.admin-mode .login__container .signIn__container-button {
+          display: flex !important;
+        }
+
+        body.admin-mode .login__container .login_container-tab .tab {
+          pointer-events: none;
+        }
     </style>
 </head>
 
-<body style="font-size: 12px">
+<body class="<%= isAdminMode ? 'admin-mode' : 'user-mode' %>" style="font-size: 12px">
     <div id="app" data-v-app="" style="background: #22275b">
       <div data-v-1690b988="" class="ar-loading-view" style="display: none; font-family: 'Roboto', 'Inter', sans-serif;">
         <div data-v-1690b988="" class="loading-wrapper">
@@ -235,7 +251,7 @@
                 </i>
               </div>
               <div data-v-58c5e826="" class="navbar__content-center">
-                <!-- <div data-v-58c5e826="" class="headLogo" style="background-image: url(./index_files/h5setting_202401100608011fs2.png);">
+                <!-- <div data-v-58c5e826="" class="headLogo" style="background-image: url(/index_files/h5setting_202401100608011fs2.png);">
                 </div> -->
                 <h3 style="color: white;"><%= appName || 'London Club' %></h3>
                 <div data-v-58c5e826="" class="navbar__content-title">
@@ -246,7 +262,7 @@
                   <div data-v-187d09fa="" class="right">
                     <div data-v-187d09fa="" class="img">
                       <img data-v-187d09fa="" class="" data-origin="https://www.bigdaddygame2.com/assets/png/en-4b649537.png"
-                      src="./index_files/en-4b649537.png">
+                      src="/index_files/en-4b649537.png">
                     </div>
                     <span data-v-187d09fa="" class="lang-text">
                       EN
@@ -262,17 +278,26 @@
             Log in
           </h1>
           <div data-v-8752c961="" class="login__container-heading__subTitle">
-            <div data-v-8752c961="">
-              Please sign in with your Google account
-            </div>
-            <div data-v-8752c961="">
-              Google Sign-In is the only login method for all panels
-            </div>
+            <% if (isAdminMode) { %>
+              <div data-v-8752c961="">
+                Please sign in with your seeded admin credential
+              </div>
+              <div data-v-8752c961="">
+                Use email/phone and password to access the admin panel
+              </div>
+            <% } else { %>
+              <div data-v-8752c961="">
+                Please sign in with your Google account
+              </div>
+              <div data-v-8752c961="">
+                Google Sign-In is the only login method for all panels
+              </div>
+            <% } %>
           </div>
         </div>
         <div data-v-8752c961="" class="login_container-tab">
           <div data-v-8752c961="" class="tab active">
-            <img data-v-93f53084="" src="./assets/png/phoneactive-945fdef4.png"
+            <img data-v-93f53084="" src="/assets/png/phoneactive-945fdef4.png"
                   class="phoneInput__container-label__icon">
             <div data-v-8752c961="" class="font30 phonefont30active">
             Log in with phone
@@ -284,10 +309,10 @@
             <div data-v-0ce8d964="" data-v-8752c961="" class="signIn__container">
               <div data-v-93f53084="" data-v-0ce8d964="" class="phoneInput__container">
                 <div data-v-93f53084="" class="phoneInput__container-label">
-                  <img data-v-93f53084="" src="./assets/png/cellphone-35529171.png"
+                  <img data-v-93f53084="" src="/assets/png/cellphone-35529171.png"
                   class="phoneInput__container-label__icon">
                   <span data-v-93f53084="">
-                    Phone number
+                    <%= isAdminMode ? 'Admin email / phone' : 'Phone number' %>
                   </span>
                 </div>
                 <div data-v-93f53084="" class="phoneInput__container-input">
@@ -301,14 +326,14 @@
                     </div>
                     
                   </div>
-                  <input data-v-93f53084="" type="text" name="username" placeholder="Please enter the phone number"
+                  <input data-v-93f53084="" type="text" name="username" placeholder="<%= isAdminMode ? 'Enter admin email or phone' : 'Please enter the phone number' %>"
                   autocomplete="on" required>
                 </div>
               </div>
               <div data-v-57d49070="" data-v-0ce8d964="" class="passwordInput__container">
                 <div data-v-57d49070="" class="passwordInput__container-label">
                   <img data-v-57d49070="" class="passwordInput__container-label__icon" data-origin="https://www.bigdaddygame2.com/assets/png/password-b827c2b3.png"
-                  src="./assets/png/forgetpassword-bd783446.png">
+                  src="/assets/png/forgetpassword-bd783446.png">
                   <span data-v-57d49070="">
                     Password
                   </span>
@@ -316,7 +341,7 @@
                 <div data-v-57d49070="" class="passwordInput__container-input">
                   <input data-v-57d49070="" id="passwordfield" type="password" placeholder="Please enterPassword"
                   maxlength="32" autocomplete="on" required>
-                  <img data-v-57d49070="" id="eyeicon" src="./index_files/eyeInvisible-2fa5c152.png"
+                  <img data-v-57d49070="" id="eyeicon" src="/index_files/eyeInvisible-2fa5c152.png"
                   class="eye" onclick="showPass()">
                 </div>
               </div>
@@ -338,24 +363,30 @@
                 <button data-v-0ce8d964="" class="active">
                   Log in
                 </button>
-                <button data-v-0ce8d964="" class="register" onclick="window.location='/register'">
-                  Register
-                </button>
+                <% if (!isAdminMode) { %>
+                  <button data-v-0ce8d964="" class="register" onclick="window.location='/register'">
+                    Register
+                  </button>
+                <% } %>
               </div>
-              <div style="margin-top:10px;">
-                <div id="googleSignInButton" style="display:flex;justify-content:center;"></div>
-              </div>
-              <div style="margin-top:8px;color:#d9e3ff;font-size:12px;text-align:center;line-height:1.4;">
-                Continue with Google to access both user and admin panels.
-              </div>
-              <div data-v-0ce8d964="" class="signIn_footer">
-                <div data-v-0ce8d964="" class="forgetcon" onclick="window.location='/forgot'">
-                  <div data-v-0ce8d964="" class="forgetbg">
-                  </div>
-                  <div data-v-0ce8d964="" class="font24">
-                    Forgot password
-                  </div>
+              <% if (!isAdminMode) { %>
+                <div style="margin-top:10px;">
+                  <div id="googleSignInButton" style="display:flex;justify-content:center;"></div>
                 </div>
+                <div style="margin-top:8px;color:#d9e3ff;font-size:12px;text-align:center;line-height:1.4;">
+                  Continue with Google to access both user and admin panels.
+                </div>
+              <% } %>
+              <div data-v-0ce8d964="" class="signIn_footer">
+                <% if (!isAdminMode) { %>
+                  <div data-v-0ce8d964="" class="forgetcon" onclick="window.location='/forgot'">
+                    <div data-v-0ce8d964="" class="forgetbg">
+                    </div>
+                    <div data-v-0ce8d964="" class="font24">
+                      Forgot password
+                    </div>
+                  </div>
+                <% } %>
                 <div data-v-0ce8d964="" class="customcon" onclick="window.location='/keFuMenu'">
                   <div data-v-0ce8d964="" class="custombg">
                   </div>
@@ -368,7 +399,7 @@
                 <div data-v-b9e16d43="" class="dialog__container" role="dialog" tabindex="0">
                   <div data-v-b9e16d43="" class="dialog__container-img">
                     <img data-v-b9e16d43="" alt="" class="" data-origin="https://www.bigdaddygame2.com/assets/png/orderCancelWarn-93894f35.png"
-                    src="./index_files/orderCancelWarn-93894f35.png">
+                    src="/index_files/orderCancelWarn-93894f35.png">
                   </div>
                   <div data-v-b9e16d43="" class="dialog__container-title">
                     <h1 data-v-b9e16d43="">
@@ -387,12 +418,12 @@
                       Cancel
                     </button>
                     <button data-v-0ce8d964="" class="dialogBtn">
-                      <img data-v-0ce8d964="" src="./index_files/iconservr-248f27d9.png">
+                      <img data-v-0ce8d964="" src="/index_files/iconservr-248f27d9.png">
                       Contact customer service
                     </button>
                     <div data-v-0ce8d964="" class="dialogClose">
                       <img data-v-0ce8d964="" class="dialogBtnClose" data-origin="https://www.bigdaddygame2.com/assets/png/close-7b93ef94.png"
-                      src="./index_files/close-7b93ef94.png">
+                      src="/index_files/close-7b93ef94.png">
                     </div>
                   </div>
                 </div>
@@ -408,7 +439,7 @@
               <div data-v-144f0059="" data-v-5d3a4ff1="" class="emailcontainer">
                 <div data-v-144f0059="" class="emailinput__container">
                   <div data-v-144f0059="" class="emailinput__container-label">
-                    <img data-v-144f0059="" src="./index_files/emailnumber-2c31d006.png" class="emailinput__container-label__icon">
+                    <img data-v-144f0059="" src="/index_files/emailnumber-2c31d006.png" class="emailinput__container-label__icon">
                     <span data-v-144f0059="">
                       Email / Account Log in
                     </span>
@@ -422,7 +453,7 @@
               <div data-v-57d49070="" data-v-5d3a4ff1="" class="passwordInput__container">
                 <div data-v-57d49070="" class="passwordInput__container-label">
                   <img data-v-57d49070="" class="passwordInput__container-label__icon" data-origin="https://www.bigdaddygame2.com/assets/png/password-b827c2b3.png"
-                  src="./index_files/password-b827c2b3.png">
+                  src="/index_files/password-b827c2b3.png">
                   <span data-v-57d49070="">
                     Password
                   </span>
@@ -430,7 +461,7 @@
                 <div data-v-57d49070="" class="passwordInput__container-input">
                   <input data-v-57d49070="" type="password" placeholder="Please enterPassword"
                   maxlength="32" autocomplete="on">
-                  <img data-v-57d49070="" src="./index_files/eyeInvisible-2fa5c152.png"
+                  <img data-v-57d49070="" src="/index_files/eyeInvisible-2fa5c152.png"
                   class="eye">
                 </div>
               </div>
@@ -474,7 +505,7 @@
                 <div data-v-b9e16d43="" class="dialog__container" role="dialog" tabindex="0">
                   <div data-v-b9e16d43="" class="dialog__container-img">
                     <img data-v-b9e16d43="" alt="" class="" data-origin="https://www.bigdaddygame2.com/assets/png/orderCancelWarn-93894f35.png"
-                    src="./index_files/orderCancelWarn-93894f35.png">
+                    src="/index_files/orderCancelWarn-93894f35.png">
                   </div>
                   <div data-v-b9e16d43="" class="dialog__container-title">
                     <h1 data-v-b9e16d43="">
@@ -493,7 +524,7 @@
                       Cancel
                     </button>
                     <button data-v-5d3a4ff1="" class="dialogBtn">
-                      <img data-v-5d3a4ff1="" src="./index_files/iconservr-248f27d9.png">
+                      <img data-v-5d3a4ff1="" src="/index_files/iconservr-248f27d9.png">
                       Contact customer service
                     </button>
                   </div>
@@ -581,6 +612,7 @@
     <script>
       const GOOGLE_CLIENT_ID = '<%= process.env.GOOGLE_CLIENT_ID || "" %>';
       const AUTH_MODE = '<%= authMode || "user" %>';
+      const ADMIN_MODE = AUTH_MODE === 'admin';
 
       function completeLogin(response) {
         if (response.status === true) {
@@ -624,12 +656,55 @@
         });
       }
 
+      function loginWithAdminCredentials() {
+        const identifier = $('input[name="username"]').val();
+        const password = $('#passwordfield').val();
+
+        if (!identifier || !String(identifier).trim() || !password) {
+          alertMess('Email/phone and password are required');
+          return;
+        }
+
+        $('.van-overlay').fadeIn(10);
+        $.ajax({
+          type: 'POST',
+          url: '/api/webapi/admin/login',
+          data: {
+            identifier: String(identifier).trim(),
+            password: String(password),
+          },
+          dataType: 'json',
+          success: function (response) {
+            completeLogin(response);
+          },
+          error: function () {
+            $('.van-overlay').fadeOut(300);
+            alertMess('Admin sign-in failed');
+          }
+        });
+      }
+
       window.handleGoogleCredentialResponse = function (response) {
         loginWithGoogleCredential(response && response.credential);
       }
 
       function removeLegacyCredentialUi() {
         $('.phoneInput__container, .passwordInput__container, .emailcontainer, .signIn__container-remember, .signIn__container-button').remove();
+      }
+
+      function initAdminCredentialLogin() {
+        const loginButton = $('.signIn__container-button .active').first();
+        loginButton.off('click').on('click', function (event) {
+          event.preventDefault();
+          loginWithAdminCredentials();
+        });
+
+        $('input[name="username"], #passwordfield').on('keypress', function (event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            loginWithAdminCredentials();
+          }
+        });
       }
 
       function initGoogleSignIn() {
@@ -685,8 +760,12 @@
         }
 
               $(window).on('load', function () {
-                removeLegacyCredentialUi();
-                initGoogleSignIn();
+                if (ADMIN_MODE) {
+                  initAdminCredentialLogin();
+                } else {
+                  removeLegacyCredentialUi();
+                  initGoogleSignIn();
+                }
               });
     </script>
     <script>
@@ -708,10 +787,10 @@
           var y = document.getElementById("eyeicon");
           if (x.type === "password") {
             x.type = "text";
-            y.src="./index_files/eyeVisible-7bc1c956.png";
+            y.src="/index_files/eyeVisible-7bc1c956.png";
           } else {
             x.type = "password";
-            y.src="./index_files/eyeInvisible-2fa5c152.png";
+            y.src="/index_files/eyeInvisible-2fa5c152.png";
           }
         }
     </script>
