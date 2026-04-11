@@ -106,8 +106,8 @@ const generateUniquePhone = async (connection, preferredPhone) => {
 };
 
 const ensureAdminColumns = async (connection) => {
-    await connection.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin ENUM('0','1') NOT NULL DEFAULT '0'");
-    await connection.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_manager ENUM('0','1') NOT NULL DEFAULT '0'");
+    await connection.query("ALTER TABLE users ADD COLUMN is_admin ENUM('0','1') NOT NULL DEFAULT '0'");
+    await connection.query("ALTER TABLE users ADD COLUMN is_manager ENUM('0','1') NOT NULL DEFAULT '0'");
 };
 
 const main = async () => {
