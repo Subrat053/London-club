@@ -162,8 +162,6 @@ const insertGoogleUser = async ({ idUser, phone, googleId, email, displayName, a
 			roses_f,
 			roses_today,
 			level,
-			is_admin,
-			is_manager,
 			rank,
 			code,
 			invite,
@@ -177,7 +175,7 @@ const insertGoogleUser = async ({ idUser, phone, googleId, email, displayName, a
 			time_otp,
 			user_level,
 			last_login
-		) VALUES (?, ?, ?, ?, 'google', '1', '0', '0', ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, '0', '0', 0, ?, '0', '0', 1, '000000', ?, 1, NOW(), ?, ?, 0, ?)`,
+		) VALUES (?, ?, ?, ?, 'google', '1', '0', '0', ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?, '0', '0', 1, '000000', ?, 1, NOW(), ?, ?, 0, ?)`,
 		[
 			idUser,
 			phone,
@@ -198,7 +196,30 @@ const insertGoogleUser = async ({ idUser, phone, googleId, email, displayName, a
 	);
 };
 
-const upsertGoogleUser = async (googleProfile, req) => {
+const syncGoogleIdentityToUser = async ({ id, googleId, email, displayName, avatarUrl, loginTime }) => {
+	try {
+		await connection.query(
+			`UPDATE users
+			 SET google_id = ?,
+				 email = ?,
+				 auth_provider = 'google',
+				 email_verified = '1',
+				 full_name = ?,
+				 avatar_url = ?,
+				 status = 1,
+				 veri = 1,
+				 last_login = ?
+			 WHERE id = ?`,
+			[googleId, email, displayName, avatarUrl, loginTime, id]
+		);
+	} catch (error) {
+		if (!isBadFieldError(error)) {
+			throw error;
+		}
+	}
+};
+
+const upsertGoogleUser = async (googleProfile, req, options = {}) => {
 	const email = String(googleProfile.email || '').trim().toLowerCase();
 	const googleId = String(googleProfile.googleId || '').trim();
 	const displayName = String(googleProfile.name || email.split('@')[0] || `Member${randomNumber(1000, 9999)}`);
@@ -206,33 +227,26 @@ const upsertGoogleUser = async (googleProfile, req) => {
 	const loginTime = Date.now();
 	const timeString = String(loginTime);
 	const requestIp = ipAddress(req);
+	const shouldCreateMissingUser = options.allowCreate !== false;
 
 	const existingUser = await findExistingGoogleUser(googleId, email);
 
 	if (existingUser) {
-		try {
-			await connection.query(
-				`UPDATE users
-				 SET google_id = ?,
-					 email = ?,
-					 auth_provider = 'google',
-					 email_verified = '1',
-					 full_name = ?,
-					 avatar_url = ?,
-					 status = 1,
-					 veri = 1,
-					 last_login = ?
-				 WHERE id = ?`,
-				[googleId, email, displayName, avatarUrl, loginTime, existingUser.id]
-			);
-		} catch (error) {
-			if (!isBadFieldError(error)) {
-				throw error;
-			}
-		}
+		await syncGoogleIdentityToUser({
+			id: existingUser.id,
+			googleId,
+			email,
+			displayName,
+			avatarUrl,
+			loginTime,
+		});
 
 		const [updatedRows] = await connection.query('SELECT * FROM users WHERE id = ? LIMIT 1', [existingUser.id]);
 		return updatedRows[0];
+	}
+
+	if (!shouldCreateMissingUser) {
+		return null;
 	}
 
 	const idUser = randomNumber(10000, 99999);
@@ -429,7 +443,14 @@ const adminLogin = async (req, res) => {
 				googleId: String(googleProfile.googleId || md5(String(googleProfile.email || '').trim().toLowerCase())).trim(),
 			};
 
-			const user = await upsertGoogleUser(normalizedProfile, req);
+			const user = await upsertGoogleUser(normalizedProfile, req, { allowCreate: false });
+			if (!user) {
+				return res.status(200).json({
+					message: 'Admin account not found. Contact super admin for access.',
+					status: false,
+				});
+			}
+
 			if (!isAdminUser(user)) {
 				return res.status(200).json({
 					message: 'Admin access required',
