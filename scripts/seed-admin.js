@@ -6,12 +6,12 @@ require('dotenv').config();
 
 // Direct configuration so this script is fully standalone (no .env dependency).
 const DIRECT_DB_CONFIG = {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT, 10) || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'babagames',
-    poolSize: parseInt(process.env.DB_POOL_SIZE, 10) || 5,
+    host: process.env.DATABASE_HOST || 'localhost',
+    port: parseInt(process.env.DATABASE_PORT, 10) || 3306,
+    user: process.env.DATABASE_USER || 'root',
+    password: process.env.DATABASE_PASSWORD || '',
+    database: process.env.DATABASE_NAME || 'babagames',
+    poolSize: parseInt(process.env.DATABASE_POOL_SIZE, 10) || 5,
 };
 
 const DIRECT_ADMIN_CONFIG = {
