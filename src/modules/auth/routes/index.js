@@ -18,6 +18,33 @@ const randomNumber = (min, max) => String(Math.floor(Math.random() * (max - min 
 
 const isBadFieldError = (error) => error?.code === 'ER_BAD_FIELD_ERROR';
 
+const GOOGLE_SCHEMA_COLUMNS = [
+	'google_id',
+	'email',
+	'auth_provider',
+	'email_verified',
+	'phone_verified',
+	'is_profile_completed',
+	'full_name',
+	'avatar_url',
+	'last_login',
+	'is_admin',
+	'is_manager',
+];
+
+const isGoogleSchemaMigrationError = (error) => {
+	if (!isBadFieldError(error)) {
+		return false;
+	}
+
+	const message = String(error?.sqlMessage || error?.message || '').toLowerCase();
+	return GOOGLE_SCHEMA_COLUMNS.some((column) => message.includes(column));
+};
+
+const hasGoogleClientId = () => Boolean(String(process.env.GOOGLE_CLIENT_ID || '').trim());
+
+const googleSetupErrorMessage = 'Google sign-in server setup incomplete. Set GOOGLE_CLIENT_ID and run Google auth migrations.';
+
 const isPhoneNullConstraintError = (error) => {
 	if (error?.code !== 'ER_BAD_NULL_ERROR') {
 		return false;
@@ -264,6 +291,13 @@ const upsertGoogleUser = async (googleProfile, req) => {
 
 const googleSignIn = async (req, res) => {
 	try {
+		if (!hasGoogleClientId()) {
+			return res.status(200).json({
+				message: googleSetupErrorMessage,
+				status: false,
+			});
+		}
+
 		const idToken = String(
 			req.body?.credential || req.body?.idToken || req.body?.googleToken || ''
 		).trim();
@@ -304,6 +338,13 @@ const googleSignIn = async (req, res) => {
 		});
 	} catch (error) {
 		console.log('googleSignIn error', error);
+		if (isGoogleSchemaMigrationError(error)) {
+			return res.status(200).json({
+				message: 'Database migration missing for Google login. Run 20260408_google_auth_users.sql, 20260409_email_centric_users.sql, and 20260409_role_flags_users.sql.',
+				status: false,
+			});
+		}
+
 		return res.status(200).json({
 			message: 'Google sign-in failed',
 			status: false,
@@ -365,6 +406,13 @@ const adminLogin = async (req, res) => {
 	try {
 		const hasGoogleCredential = Boolean(req.body?.credential || req.body?.idToken || req.body?.googleToken);
 		if (hasGoogleCredential) {
+			if (!hasGoogleClientId()) {
+				return res.status(200).json({
+					message: googleSetupErrorMessage,
+					status: false,
+				});
+			}
+
 			const idToken = String(req.body?.credential || req.body?.idToken || req.body?.googleToken || '').trim();
 			const googleProfile = await googleAuthService.verifyGoogleIdToken(idToken);
 
@@ -445,6 +493,13 @@ const adminLogin = async (req, res) => {
 		});
 	} catch (error) {
 		console.log('adminLogin error', error);
+		if (isGoogleSchemaMigrationError(error)) {
+			return res.status(200).json({
+				message: 'Database migration missing for Google login. Run 20260408_google_auth_users.sql, 20260409_email_centric_users.sql, and 20260409_role_flags_users.sql.',
+				status: false,
+			});
+		}
+
 		return res.status(200).json({
 			message: 'Admin login failed',
 			status: false,
