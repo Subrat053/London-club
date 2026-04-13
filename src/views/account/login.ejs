@@ -649,9 +649,12 @@
           success: function (response) {
             completeLogin(response);
           },
-          error: function () {
+          error: function (xhr) {
             $('.van-overlay').fadeOut(300);
-            alertMess('Google sign-in failed');
+            const backendMessage = xhr && xhr.responseJSON && xhr.responseJSON.message
+              ? xhr.responseJSON.message
+              : '';
+            alertMess(backendMessage || 'Google sign-in failed');
           }
         });
       }

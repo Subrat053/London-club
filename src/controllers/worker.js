@@ -45,16 +45,22 @@ async function teamCommission(code) {
         depositAmount,
         firstDepositCount
       );
-      await connection.query(
-        "Update users set team_reg_number = ?,team_deposit_amount = ?, team_deposit_number = ?, team_first_deposit =? where code = ?",
-        [
-          registrationCount,
-          depositAmount,
-          depositCount,
-          firstDepositCount,
-          code,
-        ]
-      );
+      try {
+        await connection.query(
+          "Update users set team_reg_number = ?,team_deposit_amount = ?, team_deposit_number = ?, team_first_deposit =? where code = ?",
+          [
+            registrationCount,
+            depositAmount,
+            depositCount,
+            firstDepositCount,
+            code,
+          ]
+        );
+      } catch (error) {
+        if (error?.code !== "ER_BAD_FIELD_ERROR") {
+          throw error;
+        }
+      }
       let [user] = await connection.query(
         "select invite from users where code = ?",
         [code]

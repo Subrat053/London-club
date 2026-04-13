@@ -56,6 +56,92 @@ const isPhoneNullConstraintError = (error) => {
 
 const createGooglePlaceholderPhone = () => `g${Date.now().toString().slice(-8)}${randomNumber(1000, 9999)}`;
 
+const usersSchemaCache = {
+	columns: null,
+	loadedAt: 0,
+};
+
+const extractGoogleCredential = (payload = {}) => String(
+	payload?.credential
+	|| payload?.idToken
+	|| payload?.googleToken
+	|| payload?.id_token
+	|| payload?.token
+	|| ''
+).trim();
+
+const getUsersColumns = async (forceRefresh = false) => {
+	const cacheFreshForMs = 30 * 1000;
+	if (!forceRefresh && usersSchemaCache.columns && (Date.now() - usersSchemaCache.loadedAt) < cacheFreshForMs) {
+		return usersSchemaCache.columns;
+	}
+
+	const [rows] = await connection.query('SHOW COLUMNS FROM users');
+	const columns = new Set(rows.map((row) => String(row.Field || '').trim()).filter(Boolean));
+	usersSchemaCache.columns = columns;
+	usersSchemaCache.loadedAt = Date.now();
+	return columns;
+};
+
+const buildSqlDate = () => {
+	const now = new Date();
+	const yyyy = now.getFullYear();
+	const mm = String(now.getMonth() + 1).padStart(2, '0');
+	const dd = String(now.getDate()).padStart(2, '0');
+	const hh = String(now.getHours()).padStart(2, '0');
+	const mi = String(now.getMinutes()).padStart(2, '0');
+	const ss = String(now.getSeconds()).padStart(2, '0');
+	return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+};
+
+const inferMissingFieldValue = (fieldName, fallbackContext = {}) => {
+	const lower = String(fieldName || '').toLowerCase();
+
+	if (lower.includes('phone')) {
+		return fallbackContext.phone || createGooglePlaceholderPhone();
+	}
+
+	if (lower.includes('name')) {
+		return fallbackContext.displayName || 'Member';
+	}
+
+	if (lower.includes('password')) {
+		return fallbackContext.passwordSeed || '';
+	}
+
+	if (lower.includes('ip')) {
+		return fallbackContext.requestIp || '127.0.0.1';
+	}
+
+	if (lower.includes('date') || lower.includes('today')) {
+		return buildSqlDate();
+	}
+
+	if (lower.includes('time')) {
+		return fallbackContext.timeString || String(Date.now());
+	}
+
+	if (
+		lower.includes('status')
+		|| lower.includes('level')
+		|| lower.includes('money')
+		|| lower.includes('verify')
+		|| lower.includes('veri')
+		|| lower.includes('otp')
+		|| lower.includes('count')
+	) {
+		return 0;
+	}
+
+	return '';
+};
+
+const extractNoDefaultField = (error) => {
+	const message = String(error?.sqlMessage || error?.message || '');
+	const match = message.match(/Field '([^']+)' doesn't have a default value/i);
+	return match?.[1] || null;
+};
+
 const ipAddress = (req) => {
 	if (req.headers['x-forwarded-for']) {
 		return req.headers['x-forwarded-for'].split(',')[0];
@@ -80,10 +166,18 @@ const createAuthTokens = async (user) => {
 	);
 
 	const tokenHash = md5(accessToken);
-	await connection.query(
-		'UPDATE users SET token = ?, last_login = ?, status = 1, veri = 1 WHERE id = ?',
-		[tokenHash, timeNow, user.id]
-	);
+	const usersColumns = await getUsersColumns();
+	const updateEntries = [
+		['token', tokenHash],
+		['last_login', timeNow],
+		['status', 1],
+		['veri', 1],
+	].filter(([column]) => usersColumns.has(column));
+
+	if (updateEntries.length) {
+		const updateSql = `UPDATE users SET ${updateEntries.map(([column]) => `${column} = ?`).join(', ')} WHERE id = ?`;
+		await connection.query(updateSql, [...updateEntries.map(([, value]) => value), user.id]);
+	}
 
 	return {
 		accessToken,
@@ -139,84 +233,107 @@ const findExistingGoogleUser = async (googleId, email) => {
 };
 
 const insertGoogleUser = async ({ idUser, phone, googleId, email, displayName, avatarUrl, passwordSeed, code, requestIp, timeString, loginTime }) => {
-	return connection.query(
-		`INSERT INTO users (
-			id_user,
-			phone,
-			google_id,
-			email,
-			auth_provider,
-			email_verified,
-			phone_verified,
-			is_profile_completed,
-			token,
-			name_user,
-			full_name,
-			avatar_url,
-			password,
-			plain_password,
-			money,
-			total_money,
-			vip_level,
-			roses_f1,
-			roses_f,
-			roses_today,
-			level,
-			rank,
-			code,
-			invite,
-			ctv,
-			veri,
-			otp,
-			ip_address,
-			status,
-			today,
-			time,
-			time_otp,
-			user_level,
-			last_login
-		) VALUES (?, ?, ?, ?, 'google', '1', '0', '0', ?, ?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?, '0', '0', 1, '000000', ?, 1, NOW(), ?, ?, 0, ?)`,
-		[
-			idUser,
-			phone,
-			googleId,
-			email,
-			'',
-			displayName,
-			displayName,
-			avatarUrl,
-			passwordSeed,
-			'',
-			code,
-			requestIp,
-			timeString,
-			timeString,
-			loginTime,
-		]
-	);
-};
+	const insertPayload = {
+		id_user: idUser,
+		phone,
+		google_id: googleId,
+		email,
+		auth_provider: 'google',
+		email_verified: '1',
+		phone_verified: '0',
+		is_profile_completed: '0',
+		token: '',
+		name_user: displayName,
+		full_name: displayName,
+		avatar_url: avatarUrl,
+		password: passwordSeed,
+		plain_password: '',
+		money: 0,
+		total_money: 0,
+		vip_level: 0,
+		roses_f1: 0,
+		roses_f: 0,
+		roses_today: 0,
+		level: 0,
+		rank: 0,
+		code,
+		invite: '0',
+		ctv: '0',
+		veri: 1,
+		otp: '000000',
+		ip_address: requestIp,
+		status: 1,
+		today: buildSqlDate(),
+		time: timeString,
+		time_otp: timeString,
+		user_level: 0,
+		last_login: loginTime,
+	};
 
-const syncGoogleIdentityToUser = async ({ id, googleId, email, displayName, avatarUrl, loginTime }) => {
-	try {
-		await connection.query(
-			`UPDATE users
-			 SET google_id = ?,
-				 email = ?,
-				 auth_provider = 'google',
-				 email_verified = '1',
-				 full_name = ?,
-				 avatar_url = ?,
-				 status = 1,
-				 veri = 1,
-				 last_login = ?
-			 WHERE id = ?`,
-			[googleId, email, displayName, avatarUrl, loginTime, id]
-		);
-	} catch (error) {
-		if (!isBadFieldError(error)) {
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		const usersColumns = await getUsersColumns(attempt > 0);
+		const entries = Object.entries(insertPayload).filter(([column]) => usersColumns.has(column));
+
+		if (!entries.length) {
+			throw new Error('Unable to create Google user: no compatible users columns found.');
+		}
+
+		const columnsSql = entries.map(([column]) => `\`${column}\``).join(', ');
+		const valuesSql = entries.map(() => '?').join(', ');
+		const values = entries.map(([, value]) => value);
+
+		try {
+			return await connection.query(`INSERT INTO users (${columnsSql}) VALUES (${valuesSql})`, values);
+		} catch (error) {
+			if (error?.code === 'ER_NO_DEFAULT_FOR_FIELD') {
+				const missingField = extractNoDefaultField(error);
+				if (!missingField || Object.prototype.hasOwnProperty.call(insertPayload, missingField)) {
+					throw error;
+				}
+
+				insertPayload[missingField] = inferMissingFieldValue(missingField, {
+					phone,
+					displayName,
+					passwordSeed,
+					requestIp,
+					timeString,
+				});
+				continue;
+			}
+
+			if (error?.code === 'ER_BAD_FIELD_ERROR') {
+				continue;
+			}
+
 			throw error;
 		}
 	}
+
+	throw new Error('Unable to create Google user after schema-adaptive retries.');
+};
+
+const syncGoogleIdentityToUser = async ({ id, googleId, email, displayName, avatarUrl, loginTime }) => {
+	const usersColumns = await getUsersColumns();
+	const updateEntries = [
+		['google_id', googleId],
+		['email', email],
+		['auth_provider', 'google'],
+		['email_verified', '1'],
+		['full_name', displayName],
+		['avatar_url', avatarUrl],
+		['status', 1],
+		['veri', 1],
+		['last_login', loginTime],
+	].filter(([column]) => usersColumns.has(column));
+
+	if (!updateEntries.length) {
+		return;
+	}
+
+	await connection.query(
+		`UPDATE users SET ${updateEntries.map(([column]) => `${column} = ?`).join(', ')} WHERE id = ?`,
+		[...updateEntries.map(([, value]) => value), id]
+	);
 };
 
 const upsertGoogleUser = async (googleProfile, req, options = {}) => {
@@ -300,7 +417,11 @@ const upsertGoogleUser = async (googleProfile, req, options = {}) => {
 	}
 
 	const [rows] = await connection.query('SELECT * FROM users WHERE id = ? LIMIT 1', [insertId]);
-	return rows[0];
+	if (rows[0]) {
+		return rows[0];
+	}
+
+	return findExistingGoogleUser(googleId, email);
 };
 
 const googleSignIn = async (req, res) => {
@@ -312,9 +433,7 @@ const googleSignIn = async (req, res) => {
 			});
 		}
 
-		const idToken = String(
-			req.body?.credential || req.body?.idToken || req.body?.googleToken || ''
-		).trim();
+		const idToken = extractGoogleCredential(req.body || {});
 
 		if (!idToken) {
 			return res.status(200).json({
@@ -338,6 +457,13 @@ const googleSignIn = async (req, res) => {
 		};
 
 		const user = await upsertGoogleUser(normalizedProfile, req);
+		if (!user?.id) {
+			return res.status(200).json({
+				message: 'Unable to complete Google sign-in right now. Please try again.',
+				status: false,
+			});
+		}
+
 		const session = await createAuthTokens(user);
 
 		// Keep compatibility with existing frontend expectations (`token` + `auth`).
@@ -418,7 +544,7 @@ const isPasswordMatch = (user, plainPassword) => {
 
 const adminLogin = async (req, res) => {
 	try {
-		const hasGoogleCredential = Boolean(req.body?.credential || req.body?.idToken || req.body?.googleToken);
+		const hasGoogleCredential = Boolean(extractGoogleCredential(req.body || {}));
 		if (hasGoogleCredential) {
 			if (!hasGoogleClientId()) {
 				return res.status(200).json({
@@ -427,7 +553,7 @@ const adminLogin = async (req, res) => {
 				});
 			}
 
-			const idToken = String(req.body?.credential || req.body?.idToken || req.body?.googleToken || '').trim();
+			const idToken = extractGoogleCredential(req.body || {});
 			const googleProfile = await googleAuthService.verifyGoogleIdToken(idToken);
 
 			if (!googleProfile?.email) {
@@ -557,7 +683,7 @@ const logout = async (req, res) => {
 };
 
 const legacyLoginProxy = async (req, res) => {
-	const hasGoogleCredential = Boolean(req.body?.credential || req.body?.idToken || req.body?.googleToken);
+	const hasGoogleCredential = Boolean(extractGoogleCredential(req.body || {}));
 
 	if (hasGoogleCredential) {
 		return googleSignIn(req, res);
@@ -684,6 +810,8 @@ const registerAuthRoutes = (router) => {
 
 	// Keep the legacy login URL but enforce Google-only sign-in.
 	router.post('/api/webapi/login', legacyLoginProxy);
+	router.post('/api/webapi/register', legacyLoginProxy);
+	router.post('/api/register', legacyLoginProxy);
 
 	// Profile completion flow for Google users (bind phone, wallet unlock).
 	router.get('/BindPhone', requireAuth, (req, res) => res.render('account/bindPhone.ejs'));

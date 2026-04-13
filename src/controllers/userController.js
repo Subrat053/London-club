@@ -472,15 +472,41 @@ const promotion = async (req, res) => {
 
     let user = [];
     try {
-        [user] = await connection.query('SELECT `phone`, `code`,`invite`, `roses_f`, `roses_f1`, `roses_today`,`roses_yesterday`,`team_reg_number`, `team_deposit_amount`, `team_deposit_number`, `team_first_deposit` FROM users WHERE `token` = ? ', [auth]);
+        [user] = await connection.query('SELECT `phone`, `code`, `invite`, `roses_f`, `roses_f1`, `roses_today` FROM users WHERE `token` = ? LIMIT 1', [auth]);
     } catch (error) {
-        if (error?.code === 'ER_BAD_FIELD_ERROR' && String(error?.sqlMessage || '').includes('roses_yesterday')) {
-            [user] = await connection.query('SELECT `phone`, `code`,`invite`, `roses_f`, `roses_f1`, `roses_today`,`team_reg_number`, `team_deposit_amount`, `team_deposit_number`, `team_first_deposit` FROM users WHERE `token` = ? ', [auth]);
-            if (user[0]) {
-                user[0].roses_yesterday = 0;
+        return res.status(200).json({
+            message: 'Failed',
+            status: false,
+            timeStamp: timeNow,
+        });
+    }
+
+    if (user[0]) {
+        // Optional columns for mixed-schema deployments.
+        const optionalColumns = [
+            'roses_yesterday',
+            'team_reg_number',
+            'team_deposit_amount',
+            'team_deposit_number',
+            'team_first_deposit',
+        ];
+
+        for (const columnName of optionalColumns) {
+            user[0][columnName] = 0;
+            try {
+                const [optionalRows] = await connection.query(
+                    `SELECT \`${columnName}\` FROM users WHERE \`token\` = ? LIMIT 1`,
+                    [auth]
+                );
+
+                if (optionalRows?.length && optionalRows[0][columnName] !== null && optionalRows[0][columnName] !== undefined) {
+                    user[0][columnName] = optionalRows[0][columnName];
+                }
+            } catch (error) {
+                if (error?.code !== 'ER_BAD_FIELD_ERROR') {
+                    console.log(`promotion optional field lookup failed for ${columnName}:`, error?.message || error);
+                }
             }
-        } else {
-            throw error;
         }
     }
     const [level] = await connection.query('SELECT * FROM level');
