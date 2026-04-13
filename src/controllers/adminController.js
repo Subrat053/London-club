@@ -42,6 +42,107 @@ const getMemberIdentifier = (req) => {
 
 const normalizeIdentity = (value) => String(value || '').trim();
 
+const SQL_IDENTIFIER_PATTERN = /^[A-Za-z0-9_]+$/;
+
+const isSafeSqlIdentifier = (value) => SQL_IDENTIFIER_PATTERN.test(String(value || ''));
+
+const quoteSqlIdentifier = (value) => `\`${value}\``;
+
+const getCurrentDatabaseName = async (connection1) => {
+    const [rows] = await connection1.query('SELECT DATABASE() AS dbName');
+    return rows?.[0]?.dbName || '';
+};
+
+const getUserReferenceValue = (member, columnName) => {
+    if (!member || !columnName) return null;
+    const mapper = {
+        id: member.id,
+        user_id: member.id,
+        id_user: member.id_user,
+        phone: normalizeIdentity(member.phone),
+        phone_used: normalizeIdentity(member.phone),
+        email: normalizeIdentity(member.email),
+    };
+    return mapper[columnName] ?? null;
+};
+
+const deleteUserRowsByForeignKeys = async (connection1, dbName, member) => {
+    if (!dbName) return;
+
+    const [fkRows] = await connection1.query(
+        `SELECT TABLE_NAME, COLUMN_NAME, REFERENCED_COLUMN_NAME
+         FROM information_schema.KEY_COLUMN_USAGE
+         WHERE TABLE_SCHEMA = ?
+           AND REFERENCED_TABLE_SCHEMA = ?
+           AND REFERENCED_TABLE_NAME = 'users'`,
+        [dbName, dbName]
+    );
+
+    const protectedTables = new Set(['users', 'admin']);
+    for (const row of fkRows) {
+        const tableName = String(row?.TABLE_NAME || '').trim();
+        const columnName = String(row?.COLUMN_NAME || '').trim();
+        const referencedColumn = String(row?.REFERENCED_COLUMN_NAME || '').trim();
+
+        if (!tableName || !columnName || !referencedColumn) continue;
+        if (protectedTables.has(tableName)) continue;
+        if (!isSafeSqlIdentifier(tableName) || !isSafeSqlIdentifier(columnName) || !isSafeSqlIdentifier(referencedColumn)) continue;
+
+        const refValue = getUserReferenceValue(member, referencedColumn);
+        if (refValue === null || refValue === undefined || refValue === '') continue;
+
+        await connection1.query(
+            `DELETE FROM ${quoteSqlIdentifier(tableName)} WHERE ${quoteSqlIdentifier(columnName)} = ?`,
+            [refValue]
+        );
+    }
+};
+
+const deleteUserRowsBySchemaColumns = async (connection1, dbName, member) => {
+    if (!dbName) return;
+
+    const candidateColumns = ['user_id', 'id_user', 'phone', 'phone_used', 'email'];
+    const placeholders = candidateColumns.map(() => '?').join(', ');
+    const [columnRows] = await connection1.query(
+        `SELECT TABLE_NAME, COLUMN_NAME
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND COLUMN_NAME IN (${placeholders})`,
+        [dbName, ...candidateColumns]
+    );
+
+    const protectedTables = new Set(['users', 'admin']);
+    const tableMap = new Map();
+
+    for (const row of columnRows) {
+        const tableName = String(row?.TABLE_NAME || '').trim();
+        const columnName = String(row?.COLUMN_NAME || '').trim();
+        if (!tableName || !columnName) continue;
+        if (protectedTables.has(tableName)) continue;
+        if (!isSafeSqlIdentifier(tableName) || !isSafeSqlIdentifier(columnName)) continue;
+
+        const refValue = getUserReferenceValue(member, columnName);
+        if (refValue === null || refValue === undefined || refValue === '') continue;
+
+        if (!tableMap.has(tableName)) {
+            tableMap.set(tableName, new Set());
+        }
+        tableMap.get(tableName).add(columnName);
+    }
+
+    const sortedTables = Array.from(tableMap.keys()).sort((a, b) => a.localeCompare(b));
+    for (const tableName of sortedTables) {
+        const columns = Array.from(tableMap.get(tableName) || []);
+        for (const columnName of columns) {
+            const refValue = getUserReferenceValue(member, columnName);
+            if (refValue === null || refValue === undefined || refValue === '') continue;
+            await connection1.query(
+                `DELETE FROM ${quoteSqlIdentifier(tableName)} WHERE ${quoteSqlIdentifier(columnName)} = ?`,
+                [refValue]
+            );
+        }
+    }
+};
+
 const getCtvIdentityKeys = (user = {}) => {
     const keys = [user?.phone, user?.email, user?.code]
         .map(normalizeIdentity)
@@ -1304,6 +1405,91 @@ const banned = async (req, res) => {
         message: 'Successful change',
         status: true,
     });
+}
+
+const deleteMember = async (req, res) => {
+    const auth = req.cookies.auth;
+    const id = Number(req.body?.id);
+
+    if (!auth || !Number.isInteger(id) || id <= 0) {
+        return res.status(200).json({
+            message: 'Failed',
+            status: false,
+            timeStamp: timeNow,
+        });
+    }
+
+    let connection1;
+    try {
+        const [authUserRows] = await connection.query('SELECT id, level FROM users WHERE token = ? LIMIT 1', [auth]);
+        const authUser = authUserRows?.[0];
+
+        if (!authUser || Number(authUser.level) !== 1) {
+            return res.status(200).json({
+                message: 'Failed',
+                status: false,
+                timeStamp: timeNow,
+            });
+        }
+
+        connection1 = await connection.getConnection();
+        await connection1.beginTransaction();
+
+        const [targetRows] = await connection1.query(
+            'SELECT id, id_user, phone, email, level FROM users WHERE id = ? LIMIT 1',
+            [id]
+        );
+        const targetUser = targetRows?.[0];
+
+        if (!targetUser) {
+            await connection1.rollback();
+            return res.status(200).json({
+                message: 'User not found',
+                status: false,
+            });
+        }
+
+        if (Number(targetUser.level) === 1) {
+            await connection1.rollback();
+            return res.status(200).json({
+                message: 'Admin account cannot be deleted',
+                status: false,
+            });
+        }
+
+        if (Number(targetUser.id) === Number(authUser.id)) {
+            await connection1.rollback();
+            return res.status(200).json({
+                message: 'You cannot delete your own account',
+                status: false,
+            });
+        }
+
+        const dbName = await getCurrentDatabaseName(connection1);
+        await deleteUserRowsByForeignKeys(connection1, dbName, targetUser);
+        await deleteUserRowsBySchemaColumns(connection1, dbName, targetUser);
+
+        await connection1.query('DELETE FROM users WHERE id = ? LIMIT 1', [id]);
+
+        await connection1.commit();
+        return res.status(200).json({
+            message: 'User deleted successfully',
+            status: true,
+        });
+    } catch (error) {
+        if (connection1) {
+            await connection1.rollback();
+        }
+        console.log('deleteMember error', error);
+        return res.status(500).json({
+            message: 'Failed to delete user',
+            status: false,
+        });
+    } finally {
+        if (connection1) {
+            connection1.release();
+        }
+    }
 }
 
 
@@ -2703,6 +2889,7 @@ module.exports = {
     createBonus,
     listRedenvelops,
     banned,
+    deleteMember,
     listRechargeMem,
     listWithdrawMem,
     getLevelInfo,

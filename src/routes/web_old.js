@@ -190,6 +190,7 @@ const initWebRouter = (app) => {
     router.post('/api/webapi/admin/statistical', adminController.middlewareAdminController, adminController.statistical2); // get info account
 
     router.post('/api/webapi/admin/banned', adminController.middlewareAdminController, adminController.banned); // get info account
+    router.post('/api/webapi/admin/deleteMember', adminController.middlewareAdminController, adminController.deleteMember); // get info account
 
 
     router.post('/api/webapi/admin/totalJoin', adminController.middlewareAdminController, adminController.totalJoin); // get info account

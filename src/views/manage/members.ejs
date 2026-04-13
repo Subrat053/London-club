@@ -143,6 +143,9 @@
             ${(data.status == 2) ? `<a class="btn btn-info btn-sm btn-info1" id="${data.id}" href="#">
               <i class="fas fa-pencil-alt"></i> Open
             </a>` : ''}
+            ${(Number(data.level) !== 1) ? `<a class="btn btn-outline-danger btn-sm btn-delete-member" id="delete-${data.id}" data-id="${data.id}" href="#" title="Delete user">
+              <i class="fas fa-trash"></i>
+            </a>` : ''}
             <!--<a class="btn btn-danger btn-sm delete-btn" href="#">
               <i class="fas fa-trash"></i> Banner
             </a>-->
@@ -190,6 +193,31 @@
             }
           });
         }
+      });
+
+      $('.btn-delete-member').click(function (e) {
+        e.preventDefault();
+        const id = $(this).data('id');
+        const check = confirm('Are you sure you want to permanently delete this user? This cannot be undone.');
+        if (!check) return;
+
+        $.ajax({
+          type: "POST",
+          url: "/api/webapi/admin/deleteMember",
+          data: {
+            id,
+          },
+          dataType: "json",
+          success: function (response) {
+            alert(response.message || 'Operation completed');
+            if (response.status === true) {
+              location.reload();
+            }
+          },
+          error: function () {
+            alert('Failed to delete user');
+          }
+        });
       });
 
     }

@@ -87,6 +87,7 @@ const registerAdminRoutes = (router) => {
     router.post('/api/webapi/admin/statistical', adminController.middlewareAdminController, adminController.statistical2);
 
     router.post('/api/webapi/admin/banned', adminController.middlewareAdminController, adminController.banned);
+    router.post('/api/webapi/admin/deleteMember', adminController.middlewareAdminController, adminController.deleteMember);
 
     router.post('/api/webapi/admin/totalJoin', adminController.middlewareAdminController, adminController.totalJoin);
     router.post('/api/webapi/admin/change', adminController.middlewareAdminController, adminController.changeAdmin);
